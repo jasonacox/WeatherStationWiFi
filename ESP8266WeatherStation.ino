@@ -20,8 +20,15 @@
 #include <Adafruit_BME280.h>
 #include "secrets.h"          // WiFi ssid and password
 
+// Globals
 #define SEALEVELPRESSURE_HPA (1013.25)
 Adafruit_BME280 bme; // I2C
+
+/* WiFi credentials */
+#ifndef WIFISSID
+#define WIFISSID "SSID"
+#define WIFIPASS "password"
+#endif
 
 #define SENSORID 101   // Serial Number - Unqiue for IoT Device
 
@@ -37,7 +44,7 @@ Adafruit_BME280 bme; // I2C
 #define NIL -1
 
 /* Debug Mode = Verbose Output to Serial Port */
-#define DEBUG 1
+#define DEBUG 0
 
 /* Wifi Settings */
 const char* ssid     = WIFISSID;
@@ -66,6 +73,11 @@ int deviceCount = 0;                  // Number of One-Wire Devices Found
 void setup() {
   Serial.begin(115200);
   bool status;
+
+  delay(400);
+  Serial.println("WeatherStation WiFi v0.1 - https://github.com/jasonacox/WeatherStationWiFi");
+  Serial.println();
+  Serial.println("> Booting...");
    
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
@@ -79,7 +91,7 @@ void setup() {
   // Initialize BME280 - Temp, Humidity and Pressure sensor
   status = bme.begin(0x76);  
   if (!status) {
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    Serial.println("  Could not find a valid BME280 sensor, check wiring!");
     while (1) {
       // Din't find it so pulse red LED to show error and try again
       digitalWrite(LED, HIGH);
@@ -96,8 +108,7 @@ void setup() {
   WiFiMulti.addAP(ssid, password);
 
   Serial.println();
-  Serial.println();
-  Serial.print("Wait for WiFi... ");
+  Serial.print("  Connecting to WiFi");
 
   // Try to connect to WiFi
   while (WiFiMulti.run() != WL_CONNECTED) {
@@ -114,11 +125,11 @@ void setup() {
   }
 
   Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.println("  WiFi connected!");
+  Serial.print("  IP address: ");
   Serial.println(WiFi.localIP());
     
-  Serial.print("connecting to ");
+  Serial.print("  Publishing to host: ");
   Serial.print(host);
   Serial.print(':');
   Serial.println(port);
@@ -135,22 +146,25 @@ void setup() {
   sensors.begin();
 
   // locate devices on the bus
-  Serial.println("Locating devices...");
-  Serial.print("Found ");
+  Serial.println("  Locating devices...");
+  Serial.print("  Found ");
   deviceCount = sensors.getDeviceCount();
   Serial.print(deviceCount, DEC);
   Serial.println(" devices.");
   Serial.println("");
   
-  Serial.println("Printing addresses...");
+  Serial.println("  Printing addresses...");
   for (int i = 0;  i < deviceCount;  i++)
   {
-    Serial.print("Sensor ");
+    Serial.print("  Sensor ");
     Serial.print(i+1);
     Serial.print(" : ");
     sensors.getAddress(Thermometer, i);
     printAddress(Thermometer);
   }
+
+  Serial.println();
+  Serial.println("> Starting Main loop...");
 }
 
 /*
@@ -171,6 +185,21 @@ void loop() {
   if(count > 300) {
      count = 0;
      state = NIL;
+  }
+
+  // Make sure we are connected to WiFi
+  while (WiFiMulti.run() != WL_CONNECTED) {
+    // Not connected - strobe red LED 
+    Serial.print("Reconnecting to WiFi");
+    digitalWrite(LED, LOW);  
+    delay(100);                       
+    digitalWrite(LED, HIGH); 
+    delay(100);                     
+    digitalWrite(LED, LOW);  
+    delay(100);                       
+    digitalWrite(LED, HIGH); 
+    Serial.print(".");
+    delay(300);
   }
   
   // Heartbeat - flash onboard LED
