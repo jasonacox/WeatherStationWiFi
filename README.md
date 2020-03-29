@@ -12,6 +12,9 @@ This project builds a solar powered Weather Station to return wather data via Wi
 ## Circuit
 TBD - Currently circuit prototype is being tested.
 
+### Schematic
+![Circuit Board](schematic.png)
+
 ### List of Materials
 * 1 x ESP8266 NodeMCU - [Amazon](https://www.amazon.com/gp/product/B07XVKJ36C/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 * 1 x BME280 module - [Amazon](https://www.amazon.com/gp/product/B07KYJNFMD/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
