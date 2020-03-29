@@ -181,17 +181,6 @@ Wire Wire Line
 Connection ~ 7050 5150
 Wire Wire Line
 	7050 5150 7050 4050
-$Comp
-L Sensor_Temperature:DS18B20 Temp1
-U 1 1 5E4AD1F4
-P 6950 3150
-F 0 "Temp1" H 6720 3196 50  0000 R CNN
-F 1 "DS18B20" H 6720 3105 50  0000 R CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 5950 2900 50  0001 C CNN
-F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 6800 3400 50  0001 C CNN
-	1    6950 3150
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	6950 3550 6950 3450
 Wire Wire Line
@@ -380,7 +369,7 @@ L Device:R_US R1
 U 1 1 5E961855
 P 4500 5100
 F 0 "R1" V 4295 5100 50  0000 C TNN
-F 1 "27K" V 4386 5100 50  0000 C TNN
+F 1 "51K" V 4386 5100 50  0000 C TNN
 F 2 "" V 4540 5090 50  0001 C CNN
 F 3 "~" H 4500 5100 50  0001 C CNN
 	1    4500 5100
@@ -411,4 +400,15 @@ Wire Wire Line
 	4500 5500 5350 5500
 Text Notes 3800 4650 0    39   ~ 0
 Voltage Sensor
+$Comp
+L Sensor_Temperature:DS18B20 One-Wire
+U 1 1 5E4AD1F4
+P 6950 3150
+F 0 "One-Wire" V 6562 3150 50  0000 C TNN
+F 1 "DS18B20" V 6641 3150 50  0000 C TNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 5950 2900 50  0001 C CNN
+F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 6800 3400 50  0001 C CNN
+	1    6950 3150
+	0    1    1    0   
+$EndComp
 $EndSCHEMATC
