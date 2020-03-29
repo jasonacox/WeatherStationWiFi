@@ -4,14 +4,14 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
-Comment2 ""
+Title "ESP8266 NodeMCU Based Solar Powered WiFi Weather Station"
+Date "25 March 2020"
+Rev "1"
+Comp "Circuit Diagram"
+Comment1 "https://github.com/jasonacox/WeatherStationWiFi"
+Comment2 "Author: Jason A. Cox"
 Comment3 ""
-Comment4 ""
+Comment4 "ESP8266 NodeMCU Based Solar Powered WiFi Weather Station"
 $EndDescr
 Wire Wire Line
 	5650 3450 5400 3450
