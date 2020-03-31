@@ -411,4 +411,71 @@ F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 6800 3400 50  00
 	1    6950 3150
 	0    1    1    0   
 $EndComp
+$Comp
+L Device:R_US R2
+U 1 1 5E817560
+P 9600 5200
+F 0 "R2" V 9395 5200 50  0000 C TNN
+F 1 "51K" V 9486 5200 50  0000 C TNN
+F 2 "" V 9640 5190 50  0001 C CNN
+F 3 "~" H 9600 5200 50  0001 C CNN
+	1    9600 5200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R_US R1
+U 1 1 5E819D3A
+P 9600 5500
+F 0 "R1" V 9395 5500 50  0000 C TNN
+F 1 "100K" V 9486 5500 50  0000 C TNN
+F 2 "" V 9640 5490 50  0001 C CNN
+F 3 "~" H 9600 5500 50  0001 C CNN
+	1    9600 5500
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5E81E950
+P 9600 5650
+F 0 "#PWR?" H 9600 5400 50  0001 C CNN
+F 1 "GND" H 9605 5477 50  0000 C CNN
+F 2 "" H 9600 5650 50  0001 C CNN
+F 3 "" H 9600 5650 50  0001 C CNN
+	1    9600 5650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR?
+U 1 1 5E81F47D
+P 9600 5000
+F 0 "#PWR?" H 9600 4850 50  0001 C CNN
+F 1 "+5V" H 9615 5173 50  0000 C CNN
+F 2 "" H 9600 5000 50  0001 C CNN
+F 3 "" H 9600 5000 50  0001 C CNN
+	1    9600 5000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9600 5350 10150 5350
+Connection ~ 9600 5350
+Text Notes 10450 5650 1    50   ~ 0
+A0 - Analog Input
+Wire Wire Line
+	9600 5050 9600 5000
+Text Notes 9300 4750 0    50   ~ 0
+Vin (from OUT+)
+Text Notes 10050 5300 0    50   ~ 0
+Vout
+Text Notes 10350 5500 1    50   ~ 0
+ESP8266
+Wire Notes Line
+	8650 4350 10700 4350
+Wire Notes Line
+	10700 4350 10700 6000
+Wire Notes Line
+	10700 6000 8650 6000
+Wire Notes Line
+	8650 6000 8650 4350
+Text Notes 9200 4500 0    50   ~ 0
+Voltage Divider Circuit
 $EndSCHEMATC
