@@ -30,9 +30,12 @@ Adafruit_BME280 bme; // I2C
 #define WIFIPASS "password"
 #endif
 
+#define HOSTNAME "WeatherStation"
 #define SENSORID 101   // Serial Number - Unqiue for IoT Device
 
 /* Pins */
+#define LED_ESP 16     // Built-in LED on NodeMCU Mainboard GPI16 = D0
+#define LED_WIFI 2     // Built-in LED on ESP-12 WiFi Module GPIO2 = D4
 #define LED 14         // LED on GPIO14 = D5
 #define WATER_1 13     // Water Sensor NPN Transitor on GPIO13 = D7
 #define ONEWIRE 12     // OneWire Bus on GPIO12 = D6
@@ -65,7 +68,8 @@ OneWire oneWire(ONEWIRE);             // DS18B20 One-Wire Temp Probe
 DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature.
 DeviceAddress Thermometer;            // variable to hold device addresses
 int deviceCount = 0;                  // Number of One-Wire Devices Found
-// uint8_t sensor1[8] = { 0x28, 0xFF, 0xAB, 0x06, 0x81, 0x14, 0x02, 0xA0  };
+// uint8_t rainsensor[8] = { 0x28, 0xFF, 0xAB, 0x06, 0x81, 0x14, 0x02, 0xA0  };
+bool justboot = true;
 
 /*
  * SETUP - Runs on Startup ONLY
@@ -79,14 +83,16 @@ void setup() {
   Serial.println();
   Serial.println("> Booting...");
    
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
+  // initialize GPIOs
+  pinMode(LED_ESP, OUTPUT);
+  pinMode(LED_WIFI, OUTPUT);
   pinMode(LED, OUTPUT);
   pinMode(WATER_1, INPUT_PULLUP);
 
   // booting - turn on LEDs to show startup 
-  digitalWrite(LED_BUILTIN, LOW);   // turn on the blue LED
-  digitalWrite(LED, HIGH);          // turn on the red LED  
+  digitalWrite(LED_ESP, LOW);     // turn on the mainboard blue LED
+  digitalWrite(LED, HIGH);        // turn on the red LED  
+  digitalWrite(LED_WIFI, HIGH);   // turn off the wifi LED  
 
   // Initialize BME280 - Temp, Humidity and Pressure sensor
   status = bme.begin(0x76);  
@@ -102,9 +108,12 @@ void setup() {
       if (status) break;
     }
   }
+  digitalWrite(LED, LOW);         // turn off red LED
 
   // We start by connecting to a WiFi network
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.hostname(HOSTNAME);
   WiFiMulti.addAP(ssid, password);
 
   Serial.println();
@@ -112,31 +121,32 @@ void setup() {
 
   // Try to connect to WiFi
   while (WiFiMulti.run() != WL_CONNECTED) {
-    // Not connected - strobe red LED to
-    digitalWrite(LED, LOW);  
-    delay(100);                       
-    digitalWrite(LED, HIGH); 
-    delay(100);                     
-    digitalWrite(LED, LOW);  
-    delay(100);                       
-    digitalWrite(LED, HIGH); 
+    // Not connected - flash wifi LED
+    digitalWrite(LED_WIFI, LOW);
+    delay(100);
+    digitalWrite(LED_WIFI, HIGH);
+    delay(100);
+    digitalWrite(LED_WIFI, LOW); 
+    delay(100);
+    digitalWrite(LED_WIFI, HIGH);
     Serial.print(".");
     delay(300);
   }
+  digitalWrite(LED_WIFI, LOW);
 
   Serial.println("");
   Serial.println("  WiFi connected!");
   Serial.print("  IP address: ");
   Serial.println(WiFi.localIP());
+  Serial.printf("  MAC address: %s\n", WiFi.macAddress().c_str());
+  Serial.printf("  RSSI: %d dBm\n", WiFi.RSSI());
     
   Serial.print("  Publishing to host: ");
   Serial.print(host);
   Serial.print(':');
   Serial.println(port);
 
-  digitalWrite(LED_BUILTIN, HIGH);    // turn off blue LED 
-  digitalWrite(LED, LOW);             // turn off red LED
-  delay(500);
+  digitalWrite(LED_WIFI, HIGH);      // turn off wifi LED
 
   state = NIL;
   count = 0;
@@ -165,6 +175,8 @@ void setup() {
 
   Serial.println();
   Serial.println("> Starting Main loop...");
+
+  digitalWrite(LED_ESP, HIGH);    // turn off main LED 
 }
 
 /*
@@ -172,8 +184,7 @@ void setup() {
  */
 void loop() {
 
-  int sensor1 = 0;
-  int sensor2 = 0;
+  int rainsensor = 0;
   int watchdog = 0;
   float voltage = 0.0;
   float bmeTemp = 0.0;
@@ -189,23 +200,23 @@ void loop() {
 
   // Make sure we are connected to WiFi
   while (WiFiMulti.run() != WL_CONNECTED) {
-    // Not connected - strobe red LED 
+    // Not connected - flash wifi LED 
     Serial.print("Reconnecting to WiFi");
-    digitalWrite(LED, LOW);  
-    delay(100);                       
-    digitalWrite(LED, HIGH); 
-    delay(100);                     
-    digitalWrite(LED, LOW);  
-    delay(100);                       
-    digitalWrite(LED, HIGH); 
+    digitalWrite(LED_WIFI, LOW);
+    delay(100);
+    digitalWrite(LED_WIFI, HIGH);
+    delay(100);
+    digitalWrite(LED_WIFI, LOW); 
+    delay(100);
+    digitalWrite(LED_WIFI, HIGH);
     Serial.print(".");
     delay(300);
   }
   
   // Heartbeat - flash onboard LED
-  digitalWrite(LED_BUILTIN, LOW);  
+  digitalWrite(LED_ESP, LOW);  
   delay(10);                       
-  digitalWrite(LED_BUILTIN, HIGH); 
+  digitalWrite(LED_ESP, HIGH); 
 
   // Check Voltage
   voltage = analogRead(A0) * (4.69 / 907.0);
@@ -239,31 +250,28 @@ void loop() {
   bmeHumidity = bme.readHumidity();           // in % humidity
   
   // Poll water sensors
-  sensor1 = digitalRead(WATER_1); // waterlevel alert 1
-  sensor2 = 1;
+  rainsensor = digitalRead(WATER_1); // waterlevel alert 1
   if(DEBUG) {
     Serial.print("STATE: ");
     Serial.print(state, DEC);
-    Serial.print(" - Water Sensors: Location 1 = ");  
-    Serial.print(sensor1, DEC);
-    Serial.print(" - Location 2 = ");
-    Serial.println(sensor2, DEC);
+    Serial.print(" - Rain Sensor: ");  
+    Serial.println(rainsensor, DEC);
   }
   
-  // Detected water at sensor1 = low water warning
-  if(sensor1 == 0 and state < WET) {
+  // Detected water at rainsensor 
+  if(rainsensor == 0 and state < WET) {
     digitalWrite(LED, HIGH); // turn on red LED
-    if(DEBUG) Serial.println("**  Water Detected - Low Water Warning  **");
+    if(DEBUG) Serial.println("**  Rain Detected **");
     state = WET;
 
     // Push update to server
     sendStatus(1, SENSORID, temperatureC, bmeTemp, bmePressure, bmeHumidity, voltage);
   }
 
-  // Sensor1 and Sensor2 clear 
-  if(sensor1 == 1 and state != DRY) {
+  // rainsensor clear 
+  if(rainsensor == 1 and state != DRY) {
     digitalWrite(LED, LOW); // turn off red LED
-    if(DEBUG) Serial.println("**  Sensor Dry - All Clear  **");
+    if(DEBUG) Serial.println("**  No Rain Detected **");
     state = DRY;
    
     // Push update to server
@@ -296,17 +304,26 @@ void printAddress(DeviceAddress deviceAddress)
  */
 void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePressure, float bmeHumidity, float voltage)
 {
+    int count = 0;
+
+    // Flash wifi LED
+    digitalWrite(LED_WIFI, LOW);
+    
     // Use WiFiClient class to create TCP connections
     WiFiClient client;
 
     // Send via HTTP GET
-    if (!client.connect(host, port)) {
-      if(DEBUG) {
-        Serial.println("connection failed");
-        Serial.println("wait 5 sec...");
+    while (!client.connect(host, port)) {
+      count = count + 1;
+      if (count > 5) {
+          Serial.println("ERROR: Unable to connect - restarting...");
+          digitalWrite(LED, HIGH);
+          delay(200);
+          digitalWrite(LED, LOW);
+          ESP.restart();
       }
+      Serial.printf("ERROR: Connection failed - Waiting 5 seconds and retrying %d...\n",count);
       delay(5000);
-      return;
     }
     client.print("GET ");
     client.print(URIPREFIX);
@@ -324,6 +341,10 @@ void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePres
     client.print(bmeHumidity);
     client.print("&voltage=");
     client.print(voltage);
+    if (justboot) {
+      client.print("&note=poweron");
+      justboot = false;
+    }
     client.println(" HTTP/1.0");
     client.println();
 
@@ -338,6 +359,9 @@ void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePres
 
     // Send via MQTT
     // TBD
+
+    // turn off wifi LED
+    digitalWrite(LED_WIFI, HIGH);
 }
 
 void printBMEValues() {
