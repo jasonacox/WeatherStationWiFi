@@ -118,17 +118,6 @@ Wire Wire Line
 	7050 5900 7050 5150
 Connection ~ 7050 4050
 $Comp
-L Regulator_Linear:MCP1700-3302E_TO92 U2
-U 1 1 5E82D5F4
-P 5800 5150
-F 0 "U2" V 5846 5045 50  0000 R CNN
-F 1 "MCP1700-3302E_TO92" V 5755 5045 50  0000 R CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 5800 4950 50  0001 C CIN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20001826D.pdf" H 5800 5150 50  0001 C CNN
-	1    5800 5150
-	0    1    -1   0   
-$EndComp
-$Comp
 L Device:C C2
 U 1 1 5E83D991
 P 5350 5700
@@ -182,8 +171,6 @@ Connection ~ 7050 5150
 Wire Wire Line
 	7050 5150 7050 4050
 Wire Wire Line
-	6950 3550 6950 3450
-Wire Wire Line
 	5400 2950 5700 2950
 Wire Wire Line
 	5700 2950 5700 2450
@@ -209,11 +196,6 @@ Wire Wire Line
 	6350 3150 6350 3450
 Wire Wire Line
 	5400 4050 7050 4050
-Wire Wire Line
-	6350 3150 6650 3150
-Connection ~ 6350 3150
-Wire Wire Line
-	7400 3150 7400 1750
 Wire Wire Line
 	7400 1750 5550 1750
 Wire Wire Line
@@ -250,21 +232,6 @@ Wire Wire Line
 	7600 1400 7400 1400
 Wire Wire Line
 	5400 3650 7900 3650
-Connection ~ 7400 1750
-$Comp
-L Device:R_US R4
-U 1 1 5E4C5B97
-P 7400 3350
-F 0 "R4" V 7605 3350 50  0000 C CNN
-F 1 "5.1K" V 7514 3350 50  0000 C CNN
-F 2 "" V 7440 3340 50  0001 C CNN
-F 3 "~" H 7400 3350 50  0001 C CNN
-	1    7400 3350
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	7400 3200 7400 3150
-Connection ~ 7400 3150
 Text Notes 7100 4650 0    39   ~ 8
 GND
 Text Notes 5600 4650 0    39   ~ 8
@@ -273,12 +240,6 @@ Text Notes 2800 5450 0    39   ~ 8
 0-5V
 Text Notes 2800 6000 0    39   ~ 8
 GND
-Wire Wire Line
-	7400 3500 7400 3550
-Wire Wire Line
-	7400 3550 6950 3550
-Wire Wire Line
-	7250 3150 7400 3150
 $Comp
 L Device:LED D1
 U 1 1 5E4A7CE1
@@ -308,9 +269,6 @@ Wire Wire Line
 Connection ~ 7900 1100
 Wire Notes Line
 	5350 3550 5400 3550
-Wire Wire Line
-	6950 3550 5400 3550
-Connection ~ 6950 3550
 Wire Wire Line
 	3800 3750 3300 3750
 Connection ~ 5550 2000
@@ -401,17 +359,6 @@ Wire Wire Line
 Text Notes 3800 4650 0    39   ~ 0
 Voltage Sensor
 $Comp
-L Sensor_Temperature:DS18B20 One-Wire
-U 1 1 5E4AD1F4
-P 6950 3150
-F 0 "One-Wire" V 6562 3150 50  0000 C TNN
-F 1 "DS18B20" V 6641 3150 50  0000 C TNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 5950 2900 50  0001 C CNN
-F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 6800 3400 50  0001 C CNN
-	1    6950 3150
-	0    1    1    0   
-$EndComp
-$Comp
 L Device:R_US R2
 U 1 1 5E817560
 P 9600 5200
@@ -478,4 +425,40 @@ Wire Notes Line
 	8650 6000 8650 4350
 Text Notes 9200 4500 0    50   ~ 0
 Voltage Divider Circuit
+Wire Wire Line
+	5400 3550 6850 3550
+$Comp
+L Sensor_Magnetic:A1101ELHL U4
+U 1 1 5E9B061A
+P 6850 3250
+F 0 "U4" V 6393 3250 50  0000 C CNN
+F 1 "A3144 (KY-003)" V 6484 3250 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 6850 2900 50  0001 L CIN
+F 3 "http://www.allegromicro.com/en/Products/Part_Numbers/1101/1101.pdf" H 6850 3900 50  0001 C CNN
+F 4 "Hall Effect Sensor" V 6575 3250 50  0000 C CNN "Sensor"
+	1    6850 3250
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	7400 1750 7400 3150
+Wire Wire Line
+	7400 3150 7250 3150
+Connection ~ 7400 1750
+Wire Wire Line
+	6450 3150 6350 3150
+Connection ~ 6350 3150
+$Comp
+L Regulator_Linear:MCP1700-3302E_TO92 U2
+U 1 1 5E82D5F4
+P 5800 5150
+F 0 "U2" V 5846 5045 50  0000 R CNN
+F 1 "MCP1700-3302E_TO92" V 5755 5045 50  0000 R CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 5800 4950 50  0001 C CIN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20001826D.pdf" H 5800 5150 50  0001 C CNN
+F 4 "3.3v Voltage Regulator" V 5800 5150 50  0001 C CNN "Desc"
+	1    5800 5150
+	0    1    -1   0   
+$EndComp
+Text Notes 4800 5350 0    50   ~ 0
+3.3v Voltage Regulator
 $EndSCHEMATC
