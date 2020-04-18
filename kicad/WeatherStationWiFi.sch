@@ -284,7 +284,7 @@ F 0 "U3" H 6730 2387 50  0000 L CNN
 F 1 "BME_BMP280" H 6730 2296 50  0000 L CNN
 F 2 "Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering" H 6250 1750 50  0001 C CNN
 F 3 "https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BME280-DS002.pdf" H 6300 2050 50  0001 C CNN
-F 4 "Pressure &" H 6730 2205 50  0000 L CNN "Sensor"
+F 4 "Temp, Pressure," H 6730 2205 50  0000 L CNN "Sensor"
 F 5 "Humidity Sensor" H 6730 2114 50  0000 L CNN "Sensor2"
 	1    6300 2250
 	1    0    0    -1  
