@@ -27,7 +27,7 @@ Note: Currently the circuit prototype is being tested.
 * 1 x 2.5W 5V/500mAh Solar Cell - [Amazon](https://www.amazon.com/gp/product/B074TYH68Z/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 * 1 x 5V Micro USB 1A TP4056 Lithium Battery Charging Board with Protection Charger Module [Amazon](https://www.amazon.com/gp/product/B06XCXPY86/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 * 1 x 3.7V 3000mAh 755068 Battery Rechargeable Lithium Polymer ion Battery Pack - [Amazon](https://www.amazon.com/gp/product/B07TTD445R/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
-* 1 x 3.3V Linear Regulator 250MA TO92-3 - [DigiKey](https://www.digikey.com/product-detail/en/microchip-technology/MCP1700-3302E-TO/MCP1700-3302E-TO-ND/652680)
+* 1 x 3.3V Linear Regulator 250MA MCP1700-3302E/TO - [DigiKey](https://www.digikey.com/product-detail/en/microchip-technology/MCP1700-3302E-TO/MCP1700-3302E-TO-ND/652680)
 #### Misc
 * 1 x GK1007 Solder-able Breadboard [Amazon](https://www.amazon.com/gp/product/B071R3BFNL/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 * 1 x 440 Ohm Resistor

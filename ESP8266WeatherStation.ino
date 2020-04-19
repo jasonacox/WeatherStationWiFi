@@ -1,6 +1,6 @@
 /*
     Solar Powered WiFi Weather Station
-    ESP8266 NodeMCU Based Weather Station 
+    ESP8266 NodeMCU Based Weather Station
     Records: Temperature, Humidity, Pressure, Rain, Wind and Voltage
 
     Send results to web server
@@ -46,11 +46,11 @@ Adafruit_BME280 bme; // I2C
 #define NIL -1
 
 /* Cycles in ms */
-#define SENSORSCAN 1000     // Run sensor scan every t ms
-#define SENDDATA 5*60*1000  // Publish sensor data every t ms
-#define LEDFLASH 5000       // Flash LED every t ms
-#define WINDCHECK 10        // Check anemometer every t ms
-#define LOWPOWER 10000      // Delay cycles during power saving mode
+#define SENSORSCAN 1000       // Run sensor scan every t ms
+#define SENDDATA 5*60*1000    // Publish sensor data every t ms
+#define LEDFLASH 5000         // Flash LED every t ms
+#define WINDCHECK 10          // Check anemometer every t ms
+#define POWERSAVE 60*60*1000  // Delay cycles during power saving mode - 1hr
 
 /* Debug Mode = Uncomment for Verbose Output to Serial Port */
 // #define DEBUG 1
@@ -79,7 +79,8 @@ bool anemometerState = false;         // Signal state from Anemometer
 unsigned long i = 0;
 ESP8266WiFiMulti WiFiMulti;           // ESP8266 Wifi
 int deviceCount = 0;                  // Number of One-Wire Devices Found
-bool justboot = true;
+bool justboot = true;                 // Flag for booting
+bool lowpower = false;                // Flag for lowpower mode
 
 /*
    SETUP - Runs on Startup ONLY
@@ -109,7 +110,7 @@ void setup() {
   // Initialize BME280 - Temp, Humidity and Pressure sensor
   status = bme.begin(0x76);
   if (!status) {
-    Serial.println("  ERROR: BME280 sensor is not responding!");
+    Serial.println("  ERROR: BME280 sensor is not responding - Retrying...");
     while (1) {
       // Din't find it so pulse red LED to show error and try again
       digitalWrite(LED_ESP, LOW);
@@ -126,7 +127,7 @@ void setup() {
 
   // We start by connecting to a WiFi network
   WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
+  //WiFi.setAutoReconnect(true);
   WiFi.hostname(HOSTNAME);
   WiFiMulti.addAP(ssid, password);
 
@@ -261,6 +262,13 @@ void loop() {
     Serial.print("Voltage: ");
     Serial.println(voltage);
 #endif
+    if (voltage <= 3.0) {
+      lowpower = true;
+      state = NIL;  // Signal to send data
+    }
+    else {
+      lowpower = false;
+    }
 
     // Poll for humidity and pressure
     bmeTemp = bme.readTemperature();            // in C
@@ -301,14 +309,23 @@ void loop() {
       sendStatus(0, SENSORID, temperatureC, bmeTemp, bmePressure, bmeHumidity, voltage, wind);
     }
 
-    // Low power mode - wait 10s between updates
-    if (voltage <= 3.0) {
-      delay(LOWPOWER);
+    // Low power mode - Power down WiFi and wait for POWERSAVE (1hr)
+    if (lowpower) {
+      WiFi.forceSleepBegin();
+      for (int x = 0; x < 3; x++) {
+        digitalWrite(LED, HIGH);
+        delay(200);
+        digitalWrite(LED, LOW);
+        delay(200);
+      }
+      delay(POWERSAVE);
+      WiFi.forceSleepWake();
     }
 
   } // sensor poll loop
 
 }
+
 
 /*
    Send Status to Web Server - water level and temperature
@@ -382,6 +399,9 @@ void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePres
   if (justboot) {
     client.print("&note=poweron");
     justboot = false;
+  }
+  if (lowpower) {
+    client.print("&warn=lowpower");
   }
   client.println(" HTTP/1.0");
   client.println();
