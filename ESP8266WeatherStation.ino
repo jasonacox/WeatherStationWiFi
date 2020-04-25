@@ -46,10 +46,10 @@ Adafruit_BME280 bme; // I2C
 #define NIL -1
 
 /* Cycles in ms */
-#define SENSORSCAN 1000       // Run sensor scan every t ms
-#define SENDDATA 5*60*1000    // Publish sensor data every t ms
-#define LEDFLASH 5000         // Flash LED every t ms
-#define WINDCHECK 10          // Check anemometer every t ms
+#define SENSORSCAN 1000       // Run sensor scan every 1s
+#define SENDDATA 5*60*1000    // Publish sensor data every 5m
+#define LEDFLASH 5000         // Flash LED every 5s
+#define WINDCHECK 10          // Check anemometer every 10ms
 #define POWERSAVE 60*60*1000  // Delay cycles during power saving mode - 1hr
 
 /* Debug Mode = Uncomment for Verbose Output to Serial Port */
@@ -112,7 +112,7 @@ void setup() {
   if (!status) {
     Serial.println("  ERROR: BME280 sensor is not responding - Retrying...");
     while (1) {
-      // Din't find it so pulse red LED to show error and try again
+      // Pulse red LED to show error and try again
       digitalWrite(LED_ESP, LOW);
       digitalWrite(LED, HIGH);
       delay(200);
@@ -127,7 +127,7 @@ void setup() {
 
   // We start by connecting to a WiFi network
   WiFi.mode(WIFI_STA);
-  //WiFi.setAutoReconnect(true);
+  //WiFi.setAutoReconnect(false); 
   WiFi.hostname(HOSTNAME);
   WiFiMulti.addAP(ssid, password);
 
@@ -138,16 +138,9 @@ void setup() {
   while (WiFiMulti.run() != WL_CONNECTED) {
     // Not connected - flash wifi LED
     digitalWrite(LED_WIFI, LOW);
-    digitalWrite(LED, HIGH);
-    delay(100);
+    blinkLED(LED, 200, true);
+    blinkLED(LED, 200, true);
     digitalWrite(LED_WIFI, HIGH);
-    digitalWrite(LED, LOW);
-    delay(100);
-    digitalWrite(LED_WIFI, LOW);
-    digitalWrite(LED, HIGH);
-    delay(100);
-    digitalWrite(LED_WIFI, HIGH);
-    digitalWrite(LED, LOW);
     Serial.print(".");
     delay(300);
   }
@@ -166,6 +159,10 @@ void setup() {
   Serial.println(port);
 
   digitalWrite(LED_WIFI, HIGH);      // turn off wifi LED
+  
+  // Turn off WiFi to save power
+  WiFi.forceSleepBegin();
+  delay(1);
 
   state = NIL;
   count = 0;
@@ -202,13 +199,13 @@ void loop() {
     digitalWrite(LED_ESP, HIGH);
   }
 
-  /* Check anemometer State */
+  /* Check anemometer sensor every WINDCHECK ms to identify rotation */
   if (currentMillis >= anemometerMillis) {
     anemometerMillis = currentMillis + WINDCHECK;
     if (digitalRead(ANEMOMETER) == HIGH) {
-      // Anemometer detects magnet
+      // Anemometer detects magnet 
       if (anemometerState == false) {
-        // Singal change means that we want to count this rotation.
+        // Signal state change means that we want to count as rotation.
         anemometerState = true;
         i = i + 1;
       }
@@ -219,7 +216,7 @@ void loop() {
     }
   }
 
-  /* Sensor Scan  */
+  /* Scan Sensors every SENSORSCAN ms */
   if (currentMillis >= cycleMillis) {
     // Set next cycle update
     cycleMillis = currentMillis + SENSORSCAN;
@@ -232,11 +229,18 @@ void loop() {
     Serial.println(heartbeatMillis);
 #endif
 
-    // Is it time to send an update to server?
+    // Check Voltage
+    voltage = analogRead(A0) * (4.69 / 907.0);
+#ifdef DEBUG
+    Serial.print("Voltage: ");
+    Serial.println(voltage);
+#endif
+
+    // Send update to server every SENDDATA ms
     if (currentMillis >= heartbeatMillis) {
 
-      heartbeatMillis = currentMillis + SENDDATA; // Set time to send data
-      state = NIL;  // Signal to send data
+      heartbeatMillis = currentMillis + SENDDATA; 
+      state = NIL;  // Flag to send data
 
       // Check for register overflow and restart.
       if (currentMillis > heartbeatMillis) {
@@ -254,20 +258,14 @@ void loop() {
         wind = i;
       }
       i = 0;
-    }
 
-    // Check Voltage
-    voltage = analogRead(A0) * (4.69 / 907.0);
-#ifdef DEBUG
-    Serial.print("Voltage: ");
-    Serial.println(voltage);
-#endif
-    if (voltage <= 3.0) {
-      lowpower = true;
-      state = NIL;  // Signal to send data
-    }
-    else {
-      lowpower = false;
+      // Check to see if battery is depleted and switch to low power mode
+      if (voltage <= 3.4) {
+        lowpower = true;
+      }
+      else {
+        lowpower = false;
+      }
     }
 
     // Poll for humidity and pressure
@@ -287,8 +285,8 @@ void loop() {
 
     // Detected water at rainsensor
     if (rainsensor == 0 and state < WET) {
-      digitalWrite(LED, HIGH); // turn on red LED
 #ifdef DEBUG
+      digitalWrite(LED, HIGH); // turn on red LED
       Serial.println("**  Rain Detected **");
 #endif
       state = WET;
@@ -297,10 +295,10 @@ void loop() {
       sendStatus(1, SENSORID, temperatureC, bmeTemp, bmePressure, bmeHumidity, voltage, wind);
     }
 
-    // rainsensor clear or heartbeat update
+    // Rainsensor clear or heartbeat update
     if (rainsensor == 1 and state != DRY) {
-      digitalWrite(LED, LOW); // turn off red LED
 #ifdef DEBUG
+      digitalWrite(LED, LOW); // turn off red LED
       Serial.println("**  No Rain Detected **");
 #endif
       state = DRY;
@@ -309,23 +307,69 @@ void loop() {
       sendStatus(0, SENSORID, temperatureC, bmeTemp, bmePressure, bmeHumidity, voltage, wind);
     }
 
-    // Low power mode - Power down WiFi and wait for POWERSAVE (1hr)
+    // Low power mode - slow down updates and if critical power pause for POWERSAVE (1hr)
     if (lowpower) {
-      WiFi.forceSleepBegin();
-      for (int x = 0; x < 3; x++) {
-        digitalWrite(LED, HIGH);
-        delay(200);
-        digitalWrite(LED, LOW);
-        delay(200);
+      if (voltage >= 3.0) {
+        heartbeatMillis = currentMillis + SENDDATA * 3; // Reduce updates 3x
       }
-      delay(POWERSAVE);
-      WiFi.forceSleepWake();
+      else {
+        delay(POWERSAVE); // wait an extended period of time
+      }
     }
 
   } // sensor poll loop
+  
+} // loop
 
+/*
+   LED PWM Blink for Fade in and out for ESP8266 NodeMCU
+*/
+void blinkLED(int pin, long duration, bool pwm)
+{
+  long fade;
+  switch (pin) {
+    case 4:
+    case 12:
+    case 14:
+    case 15:
+      // PWM capable pins
+      if (pwm) {
+        // PWM Fade in and out
+        fade = (duration * 1000) / 2;
+        for (int brightness = 0; brightness < PWMRANGE; brightness++) {
+          analogWrite(pin, brightness);
+          delayMicroseconds(fade / PWMRANGE);
+        }
+        for (int brightness = 0; brightness < PWMRANGE; brightness++) {
+          analogWrite(pin, PWMRANGE - brightness);
+          delayMicroseconds(fade / PWMRANGE);
+        }
+      }
+      else {
+        // Digital blink
+        digitalWrite(pin, HIGH);
+        delay(duration);
+        digitalWrite(pin, LOW);
+      }
+      break;
+    case 2:
+    case 16:
+      // Digital blink - reverse polarity
+      digitalWrite(pin, LOW);
+      delay(duration);
+      digitalWrite(pin, HIGH);
+      break;
+    case 1:
+    case 3:
+    case 11:
+    default:
+      // Digital blink
+      digitalWrite(pin, HIGH);
+      delay(duration);
+      digitalWrite(pin, LOW);
+      break;
+  }
 }
-
 
 /*
    Send Status to Web Server - water level and temperature
@@ -334,33 +378,29 @@ void loop() {
       bmePressure: hPa
       bmeHumidity: percentage
       voltage: volts
-      wind: km/s
+      wind: rotation counts
 */
 void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePressure, float bmeHumidity, float voltage, float wind)
 {
   int count = 0;
 
+  // Light wifi LED
+  digitalWrite(LED_WIFI, LOW);
+  digitalWrite(LED, HIGH);
+
+  // Wake up WiFi
+  WiFi.forceSleepWake();
+  delay(1);
+
   // Make sure we are connected to WiFi.
   while (WiFiMulti.run() != WL_CONNECTED) {
     // Not connected - flash wifi LED and try to reconnect...LED
     digitalWrite(LED_WIFI, LOW);
-    digitalWrite(LED, HIGH);
-    delay(100);
+    blinkLED(LED, 200, true);
     digitalWrite(LED_WIFI, HIGH);
-    digitalWrite(LED, LOW);
-    delay(100);
-    digitalWrite(LED_WIFI, LOW);
-    digitalWrite(LED, HIGH);
-    delay(100);
-    digitalWrite(LED_WIFI, HIGH);
-    digitalWrite(LED, LOW);
     Serial.print(".");
     delay(300);
   }
-
-  // Flash wifi LED
-  digitalWrite(LED_WIFI, LOW);
-  digitalWrite(LED, HIGH);
 
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
@@ -370,9 +410,10 @@ void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePres
     count = count + 1;
     if (count > 5) {
       Serial.println("ERROR: Unable to connect - restarting...");
-      digitalWrite(LED, HIGH);
-      delay(200);
-      digitalWrite(LED, LOW);
+      for (int x = 0; x < 4; x++) {
+        blinkLED(LED, 100, false);
+        delay(100);
+      }
       ESP.restart();
     }
     Serial.printf("ERROR: Connection failed - Waiting 5 seconds and retrying %d...\n", count);
@@ -421,5 +462,9 @@ void sendStatus(int waterlevel, int id, float temp, float bmeTemp, float bmePres
   // turn off wifi LED
   digitalWrite(LED_WIFI, HIGH);
   digitalWrite(LED, LOW);
+
+  // Turn off WiFi to save power
+  WiFi.forceSleepBegin();
+  delay(1);
 
 }
